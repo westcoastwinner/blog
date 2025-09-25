@@ -209,6 +209,107 @@ objects.stream().filter(...)。collect();
 Map<String, String> collect = dataSpaceEntities.stream().collect(Collectors.toMap(DataSpaceEntity::getSpaceId, DataSpaceEntity::getSpaceName));
 ```
 
+#### 🔹reduce()方法
+
+------
+
+#####  **`Stream.reduce`**
+
+- **位置**：在 `Stream` API 里
+- **作用**：把一堆元素“折叠”成一个结果
+- **操作对象**：一个流里的元素
+- **结果**：是一个单值（可能是数值、字符串、对象……）
+
+例子：
+
+```
+List<Integer> nums = Arrays.asList(1, 2, 3, 4);
+int sum = nums.stream()
+              .reduce(0, (a, b) -> a + b);
+
+System.out.println(sum); // 10
+```
+
+这里 `reduce` 把 `[1,2,3,4]` 折叠成了一个值 `10`。
+
+我想知道reduce这个方法所需的两个参数是什么意思？
+
+###### 
+
+好问题 👍，`Stream.reduce` 最容易让人迷糊的就是它的参数。其实 **reduce = 归约/折叠**，就是不断把流里的元素“聚合”成一个最终结果。
+
+------
+
+##### reduce 的常见两种写法
+
+**1. 两个参数版本**
+
+```
+<T> T reduce(T identity, BinaryOperator<T> accumulator)
+```
+
+- **identity**：初始值（又叫“归约起点”）。
+  - 流为空时就直接返回它。
+  - 它还会作为第一个参数传给累加器。
+- **accumulator**：累加器函数 `(partialResult, element) -> newPartialResult`。
+  - `partialResult`：上一次计算的结果（第一次时是 `identity`）。
+  - `element`：流里的当前元素。
+  - 返回值：新的部分结果。
+
+**例子：求和**
+
+```
+List<Integer> nums = Arrays.asList(1, 2, 3, 4);
+int sum = nums.stream()
+              .reduce(0, (a, b) -> a + b);
+
+System.out.println(sum); // 10
+```
+
+这里：
+
+- `identity = 0`
+- 累加器 `(a, b) -> a + b`
+- 计算过程：`(((0+1)+2)+3)+4 = 10`
+
+------
+
+**2. 一个参数版本**
+
+```
+Optional<T> reduce(BinaryOperator<T> accumulator)
+```
+
+- 没有 `identity`，所以返回值是 `Optional<T>`（因为流可能为空）。
+- 用法一样，只是没初始值。
+
+**例子：求最大值**
+
+```
+List<Integer> nums = Arrays.asList(3, 5, 2, 8);
+Optional<Integer> max = nums.stream()
+                            .reduce((a, b) -> a > b ? a : b);
+
+System.out.println(max.get()); // 8
+```
+
+------
+
+**🔑 总结**
+
+- **identity**：初始值 & 空流的兜底值。
+- **accumulator**：定义“如何把部分结果和新元素合并”的函数。
+
+------
+
+#### 🔹distinct()方法
+
+#### 🔹count()方法
+
+#### 🔹mapToInt()方法
+
+#### 🔹sum()方法
+
 ### 6.时间日期格式
 
 前端传回的时间格式一般应该用字符串接收，但在数据库中查询时，这个格式应转换为Java 的LocalDateTime
@@ -467,4 +568,25 @@ left join(
   group by sm.space_id
 ) sm on ds.space_id=sm.space_id
 ```
+
+### 15.BigDecimal
+
+这是Java的类，用来处理精确小数（尤其是金额）的类型，比 `double` 更安全（不会有二进制浮点误差）。
+
+SpringMVC/Spring Boot 的参数绑定机制可以自动把前端传过来的 `字符串/数字` 转换成 `BigDecimal`，你不需要写额外的转换器。例如前端传 `"123.45"`，Spring Boot 自动会转成 `new BigDecimal("123.45")`。
+
+这个类型和数据库中的Decimal对应。
+
+在**控制精度**上，该类提供方法：
+
+```
+//newScale--小数位数，roundingMode--舍入规则
+public BigDecimal setScale(int newScale, int roundingMode) ;
+
+//注意用法，该方法本质是对已有的一个BigDecimal对象的内含值做精度控制，所以调用后需要返回值：
+BigDecimal old=new BigDecimal("1234.5678");
+BigDecimal new = old.setScale(2,//四舍五入) ;//"1234.5678"->"1234.57"
+```
+
+在**数值比较**上，该类不可直接比较，需要借助内置min\max方法比较，而该方法不可比较null值，所以往往还需自己额外写判空规则。（注意，这和数据库的decimal很不同，后者可以直接比较）
 
