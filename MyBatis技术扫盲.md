@@ -781,7 +781,7 @@ SELECT product_id, sales_amount FROM sales_q2;
 
 
 
-## 3.coalesce() 
+## 3.`COALESCE()`
 
 **`COALESCE()`** 函数是 SQL（数据库查询语言）中一个非常实用的函数，用于处理 **NULL** 值。
 
@@ -809,7 +809,7 @@ COALESCE(expression1, expression2, expression3, ...)
 
 
 
-## 4.FIND_IN_SET()
+## 4.`FIND_IN_SET()`
 
 ### FIND_IN_SET() 函数的功能
 
@@ -835,3 +835,134 @@ FIND_IN_SET(str, strlist)
 虽然 `FIND_IN_SET()` 很方便，但在数据库设计中，通常不推荐在一个字段中存储逗号分隔的列表（这种设计被称为**非第一范式**）。
 
 更好的做法是使用**多对多关系**，将标签存放在一个单独的关联表中。这样做可以提高查询性能，并更好地利用数据库索引。只有在特定场景或面对历史数据时，才推荐使用 `FIND_IN_SET()`。
+
+## 5.`GROUP_CONCAT`的功能和用法
+
+**`GROUP_CONCAT()`** 函数是 **MySQL** 数据库中一个非常强大且常用的聚合函数。它的主要作用是将分组中的多行数据（通常是一个字段的值）连接（或“拼接”）成一个单独的、以字符串形式返回的结果。
+
+简单来说，它能把多条记录的某个字段值“浓缩”成一行数据。
+
+### 功能
+
+在与 `GROUP BY` 子句一起使用时，`GROUP_CONCAT()` 会收集同一组内的所有非 `NULL` 字符串，并将它们用一个指定的分隔符连接起来，形成一个长的字符串。
+
+### 语法
+
+```sql
+GROUP_CONCAT(
+    [DISTINCT]    -- 可选：去重，只连接不重复的值
+    expression    -- 必需：要连接的字段或表达式
+    [ORDER BY column [ASC | DESC], ...] -- 可选：对组内的值进行排序
+    [SEPARATOR separator_string]        -- 可选：指定连接值的分隔符，默认为逗号 (`,`)
+)
+```
+
+------
+
+### 常见用法和示例
+
+假设我们有一个 `students` 表和 `scores` 表，记录了学生参加不同课程的成绩：
+
+| student_id | course | score |
+| ---------- | ------ | ----- |
+| 101        | 语文   | 95    |
+| 101        | 数学   | 88    |
+| 102        | 语文   | 92    |
+| 101        | 英语   | 90    |
+| 102        | 英语   | 85    |
+
+#### 1. 基本用法：将多个值连接成一个字符串
+
+我们想查看每个学生所有**课程名称**的列表：
+
+```sql
+SELECT
+    student_id,
+    GROUP_CONCAT(course) AS courses_list
+FROM
+    scores
+GROUP BY
+    student_id;
+```
+
+**结果：**
+
+| student_id | courses_list   |
+| ---------- | -------------- |
+| 101        | 语文,数学,英语 |
+| 102        | 语文,英语      |
+
+#### 2. 使用自定义分隔符（SEPARATOR）
+
+我们想用分号和空格 `'; '` 来分隔成绩：
+
+```sql
+SELECT
+    student_id,
+    GROUP_CONCAT(score SEPARATOR '; ') AS scores_separated
+FROM
+    scores
+GROUP BY
+    student_id;
+```
+
+**结果：**
+
+| student_id | scores_separated |
+| ---------- | ---------------- |
+| 101        | 95; 88; 90       |
+| 102        | 92; 85           |
+
+#### 3. 对连接结果进行排序（ORDER BY）
+
+为了让结果更清晰，我们想按**成绩降序**排列后进行连接：
+
+```sql
+SELECT
+    student_id,
+    GROUP_CONCAT(course ORDER BY score DESC SEPARATOR ' > ') AS top_to_low_score
+FROM
+    scores
+GROUP BY
+    student_id;
+```
+
+**结果：**
+
+| student_id | top_to_low_score   |
+| ---------- | ------------------ |
+| 101        | 语文 > 英语 > 数学 |
+| 102        | 语文 > 英语        |
+
+导出到 Google 表格
+
+#### 4. 连接带有信息的字符串（连接两个字段）
+
+我们想将 **课程名** 和 **成绩** 一起连接起来，形成类似 "语文(95), 数学(88)" 的格式：
+
+```sql
+SELECT
+    student_id,
+    GROUP_CONCAT(
+        CONCAT(course, '(', score, ')')
+        ORDER BY score DESC
+        SEPARATOR ', '
+    ) AS detailed_scores
+FROM
+    scores
+GROUP BY
+    student_id;
+```
+
+**结果：**
+
+| student_id | detailed_scores              |
+| ---------- | ---------------------------- |
+| 101        | 语文(95), 英语(90), 数学(88) |
+| 102        | 语文(92), 英语(85)           |
+
+### 注意事项
+
+1. **MySQL 特有**：`GROUP_CONCAT()` 是 **MySQL 的扩展函数**，不是标准的 SQL 函数。在 PostgreSQL、SQL Server 或 Oracle 等其他数据库中，你需要使用不同的函数（如 `STRING_AGG`、`LISTAGG` 或 XML 方法）来实现类似的功能。
+2. **长度限制**：`GROUP_CONCAT()` 的结果长度是有限制的，默认最大长度通常是 **1024 个字符**。如果你的连接字符串可能会超过这个长度，你需要通过设置 MySQL 的系统变量 **`group_concat_max_len`** 来增加这个限制。
+   - 例如，在会话中执行：`SET group_concat_max_len = 10240;` (设置为 10KB)

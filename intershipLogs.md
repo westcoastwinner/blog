@@ -590,3 +590,200 @@ BigDecimal new = old.setScale(2,//四舍五入) ;//"1234.5678"->"1234.57"
 
 在**数值比较**上，该类不可直接比较，需要借助内置min\max方法比较，而该方法不可比较null值，所以往往还需自己额外写判空规则。（注意，这和数据库的decimal很不同，后者可以直接比较）
 
+### 16.Collections,Arrays和Collectors
+
+你这个问题问得非常好 🎯，这三个类名字容易混淆，但其实定位和场景完全不同。我们可以把它们当成 Java 集合操作里的“三兄弟”：
+
+------
+
+#### 1. **`Collections`**
+
+- **包**：`java.util.Collections`
+- **对象**：**集合类（List、Set、Map）**
+- **作用**：提供很多静态工具方法，用来操作现有的集合。
+- **常用方法**：
+  - `Collections.sort(list)` → 排序
+  - `Collections.reverse(list)` → 反转
+  - `Collections.shuffle(list)` → 打乱
+  - `Collections.max/min(collection)` → 求最大/最小
+  - `Collections.unmodifiableList(list)` → 返回只读集合
+
+👉 **特点**：主要针对 **集合框架（Collection、Map）**。
+
+------
+
+#### 2. **`Arrays`**
+
+- **包**：`java.util.Arrays`
+- **对象**：**数组**（`int[]`, `String[]` 等）
+- **作用**：提供静态工具方法，专门处理数组。
+- **常用方法**：
+  - `Arrays.sort(array)` → 数组排序
+  - `Arrays.binarySearch(array, key)` → 二分查找
+  - `Arrays.asList(array)` → 数组转 List（⚠️ 返回的是固定大小的 List）
+  - `Arrays.equals(arr1, arr2)` → 判断数组是否相等
+  - `Arrays.fill(array, value)` → 填充数组
+
+👉 **特点**：主要针对 **数组**。
+
+------
+
+#### 3. **`Collectors`**
+
+- **包**：`java.util.stream.Collectors`
+- **对象**：**Stream 流**
+- **作用**：配合 `Stream.collect(...)`，定义如何把流里的元素收集成一个结果。
+- **常用方法**：
+  - `Collectors.toList()` → 收集到 `List`
+  - `Collectors.toSet()` → 收集到 `Set`
+  - `Collectors.toMap(keyMapper, valueMapper)` → 收集到 `Map`
+  - `Collectors.joining(",")` → 字符串拼接
+  - `Collectors.groupingBy(...)` → 分组
+  - `Collectors.partitioningBy(...)` → 按条件分区
+
+**例子**：
+
+```
+List<String> names = Arrays.asList("Alice", "Bob", "Charlie");
+
+List<String> result = names.stream()
+                           .filter(n -> n.length() > 3)
+                           .collect(Collectors.toList());
+
+System.out.println(result); // [Alice, Charlie]
+```
+
+👉 **特点**：主要针对 **Stream 流 → 终端收集结果**。
+
+------
+
+#### 🔗 三者的联系
+
+- `Arrays` 和 `Collections` 都是 **集合/数组的工具类**（面向传统数据结构）。
+- `Collectors` 是 **Stream 的配套工具类**（面向函数式流式处理）。
+- 可以这样理解：
+  - **Arrays**：解决“数组的基本操作”
+  - **Collections**：解决“集合的常见算法”
+  - **Collectors**：解决“Stream 的最终结果落地”
+
+------
+
+💡 打个比方：
+
+- **Arrays** = 厨房刀具，帮你切配原材料（数组）。
+- **Collections** = 烹饪技巧，帮你炒、煮、调味（操作集合）。
+- **Collectors** = 盛菜的碗盘，帮你把炒好的菜装盘（把 Stream 的结果收集起来）。
+
+### 17.@Scheduled--Springboot定时任务注解
+
+Spring Boot 使用 `@Scheduled` 注解来实现定时任务非常方便，主要分三步：
+
+#### 1. 启用定时任务功能
+
+在你的 **Spring Boot 主应用类**（通常带有 `@SpringBootApplication` 的类）或任何一个配置类上添加 **`@EnableScheduling`** 注解。**//也可直接在Component类上加**
+
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@SpringBootApplication
+@EnableScheduling // 启用 Spring 的定时任务功能
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+```
+
+#### 2. 创建定时任务类和方法
+
+创建一个 Spring 管理的 Bean（例如，使用 **`@Component`** 或 `@Service` 等注解标记的类），并在要执行定时任务的方法上添加 **`@Scheduled`** 注解。
+
+被 `@Scheduled` 标记的方法通常需要满足以下条件：
+
+- **返回类型为 `void`**。
+- **不接受任何参数**。
+
+```java
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import java.util.Date;
+
+@Component // 确保这个类被 Spring 扫描并管理
+public class ScheduledTasks {
+
+    // 定时任务方法体...
+    @Scheduled(/* 配置定时任务的执行策略 */)
+    public void executeTask() {
+        System.out.println("定时任务执行了! 当前时间: " + new Date());
+    }
+}
+```
+
+#### 3. 配置 `@Scheduled` 的执行策略
+
+`@Scheduled` 注解提供了多种配置定时执行时间的方式，最常用的有三种：
+
+a. `cron` 表达式
+
+使用 **`cron`** 表达式来定义复杂的定时规则，例如在每周一、三、五的上午 10:15 执行。
+
+- Cron 表达式格式：`秒 分 时 日 月 周`
+
+```
+// 每天上午 10:15:30 执行
+@Scheduled(cron = "30 15 10 * * ?") 
+public void cronTask() {
+    // ...
+}
+```
+
+b. `fixedRate` (固定速率)
+
+使用 **`fixedRate`** 定义任务开始执行的时间间隔。**它不关心上一次任务是否完成**，总是以固定的速率开始下一次执行。
+
+- 值以**毫秒**为单位。
+
+```java
+// 每 5 秒（5000 毫秒）执行一次，从上一次任务开始时计时
+@Scheduled(fixedRate = 5000) 
+public void fixedRateTask() throws InterruptedException {
+    // 假设这个任务需要 3 秒
+    Thread.sleep(3000); 
+    System.out.println("Fixed Rate 任务完成。");
+}
+// 如果任务执行时间超过 fixedRate，下一个任务会马上开始。
+```
+
+c. `fixedDelay` (固定延迟)
+
+使用 **`fixedDelay`** 定义**上一次任务完成**到**下一次任务开始**的时间间隔。它会等待上一个任务完全执行完毕后，再等待指定的时间才开始下一次执行。
+
+- 值以**毫秒**为单位。
+
+```java
+// 上一次任务完成后，等待 5 秒（5000 毫秒）再执行下一次
+@Scheduled(fixedDelay = 5000) 
+public void fixedDelayTask() throws InterruptedException {
+    // 假设这个任务需要 7 秒
+    Thread.sleep(7000); 
+    System.out.println("Fixed Delay 任务完成。");
+}
+// 下一个任务会在当前任务完成（7秒）后，再等待 5 秒才开始。
+```
+
+可选：`initialDelay` (首次延迟)
+
+`fixedRate` 和 `fixedDelay` 都可以配合 **`initialDelay`** 使用，用于指定应用启动后**第一次**执行任务前的延迟时间。
+
+- 值以**毫秒**为单位。
+
+```Java
+// 应用启动后延迟 10 秒（10000 毫秒）执行第一次任务，
+// 之后每 5 秒执行一次 (fixedRate)
+@Scheduled(initialDelay = 10000, fixedRate = 5000) 
+public void initialDelayTask() {
+    // ...
+}
+```
