@@ -738,7 +738,79 @@ SELECT product_id, sales_amount FROM sales_q2;
 
 就可以执行了，这样"y"解析出来是一个字符串，两者相等！
 
+## 8.MyBatis-Plus-TypeHandler使用默认JacksonHandler带来的问题
 
+我面临一个困境：tinyProduct.getMeasures();返回的类型应该是List<Measure> measures，这在编译时也是正确的，但奇怪的是，在执行时，我发现它的实际类型是List<LinkedHashMap<String,Object>>，也就是说，这些Measure对象在mybatis-plus+springboot的关系对象映射下被存储为LinkedHashMap<String,Object>结构，但在编译层面没能改过来，且我通过强制类型转换发现行不通，我该怎么办？
+
+你遇到的现象，其实是 **MyBatis-Plus 没有把 `measures` 字段正确地反序列化为 `List<Measure>` 对象，而是把 JSON 或关联结果直接映射成了 `List<LinkedHashMap>`**。这就是为什么你在编译时看到 `List<Measure>`，但运行时却是 `List<LinkedHashMap>`。
+
+------
+
+为什么会这样？
+
+1. **MyBatis 的默认行为**
+    如果你的 `measures` 字段在数据库里是 JSON 字段（比如 `json` 或 `text` 存储），MyBatis 默认会用 `Jackson` 或 `Fastjson` 把它解析成 `Map/List`，而不是强类型的对象。
+2. **没有配置 `TypeHandler` 或 `resultMap`**
+    MyBatis 不会“自动”知道 JSON 要转成 `Measure`，除非你告诉它该怎么做。
+    所以就退化成了 `LinkedHashMap<String,Object>`。
+3. **强转失败的原因**
+    因为 JVM 内存里存放的本来就是 `LinkedHashMap`，编译器的 `List<Measure>` 只是“声明”，在运行时自然转不回 `Measure`。
+
+------
+
+**解决思路：自定义 `TypeHandler`**
+
+如果数据库字段本质是 JSON，可以写个 `TypeHandler`，在查询时自动把 JSON 转换成 `List<Measure>`。
+
+示例：
+
+```
+@MappedTypes({List.class})
+@MappedJdbcTypes(JdbcType.VARCHAR)
+public class MeasureListTypeHandler extends BaseTypeHandler<List<Measure>> {
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    @Override
+    public void setNonNullParameter(PreparedStatement ps, int i, List<Measure> parameter, JdbcType jdbcType) throws SQLException {
+        ps.setString(i, mapper.writeValueAsString(parameter));
+    }
+
+    @Override
+    public List<Measure> getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        return parse(rs.getString(columnName));
+    }
+
+    @Override
+    public List<Measure> getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        return parse(rs.getString(columnIndex));
+    }
+
+    @Override
+    public List<Measure> getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        return parse(cs.getString(columnIndex));
+    }
+
+    private List<Measure> parse(String json) throws SQLException {
+        if (StringUtils.isBlank(json)) {
+            return Collections.emptyList();
+        }
+        try {
+            return mapper.readValue(json, new TypeReference<List<Measure>>() {});
+        } catch (Exception e) {
+            throw new SQLException("Failed to parse JSON to List<Measure>", e);
+        }
+    }
+}
+```
+
+然后在实体类字段上加：
+
+```
+@TableField(typeHandler = MeasureListTypeHandler.class)
+private List<Measure> measures;
+```
+
+这样 MyBatis-Plus 会在查询时自动转成 `List<Measure>`，你的强转问题就不存在了。
 
 # SQL函数篇
 

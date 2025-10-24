@@ -6,3 +6,8 @@
 
 3.Japanese government bond (JGB) yields have risen **on the prospect of Takaichi deploying** a big spending package that adds to the country's huge debt pile and worsens its already tattered finances.
 
+4.Israel and Hamas were locked in tense, albeit indirect, negotiations over the list of Palestinian prisoners to be freed.
+
+5.Palestinian analyst Akram Attallah told Reuters in Cairo the Trump plan had been crafted to favour Israel, allowing it to dictate terms and shift blame.
+
+6.Even if the talks between Trump and President Xi Jinping can be put back on track, experts say each side's belief **that** it has the upper hand, coupled with China's tougher posture, **makes a narrow deal on a few issues the most likely outcome**.
