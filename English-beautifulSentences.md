@@ -11,3 +11,5 @@
 5.Palestinian analyst Akram Attallah told Reuters in Cairo the Trump plan had been crafted to favour Israel, allowing it to dictate terms and shift blame.
 
 6.Even if the talks between Trump and President Xi Jinping can be put back on track, experts say each side's belief **that** it has the upper hand, coupled with China's tougher posture, **makes a narrow deal on a few issues the most likely outcome**.
+
+7.Although BYD has yet to pose much of a challenge to Japanese car companies in the domestic market, the government was nevertheless paying close attention, Mori said.
