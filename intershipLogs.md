@@ -885,3 +885,93 @@ DECIMAL(10, 2)
 
 - 永远不要用 `double` 存金额；`float` 更是禁区。
    （你可能在账面上损失一分钱，但审计会让你损失一下午 😆）
+
+### 19.字符串去除前后空格
+
+在 Java 中去除字符串**头尾的空格**有几种方式，取决于你想“去掉哪些空格”👇
+
+------
+
+✅ **青铜操作：`String.trim()`**
+
+```
+String s = "   Hello World   ";
+String result = s.trim();
+System.out.println(result); // 输出: "Hello World"
+```
+
+ 说明：`trim()` 会去除 Unicode 编码 ≤ `\u0020` 的空白字符（即普通空格、制表符 `\t`、换行符 `\n` 等）。但**不会**去除一些特殊的空白字符（比如全角空格 `\u3000`）。
+
+------
+
+✅ **大师操作：`strip()`**
+
+```
+String s = "　 Hello World　 "; // 注意包含全角空格
+String result = s.strip();
+System.out.println(result); // 输出: "Hello World"
+```
+
+ 说明：`strip()` 是从 **Java 11** 开始引入的。它基于 Unicode 标准 去除所有类型的空白字符（包括全角空格）。
+
+ 只去除头部或尾部空格：
+
+```
+String s = "   Hello World   ";
+
+String leftStripped = s.stripLeading();   // 去除前导空格
+String rightStripped = s.stripTrailing(); // 去除尾部空格
+```
+
+------
+
+✅数据库方式：在 SQL 中直接使用 `TRIM()`
+
+```
+<if test="req.productName != null and req.productName != ''">
+    AND p.product_name LIKE CONCAT('%', TRIM(#{req.productName}), '%')
+</if>
+```
+
+问题：当productName=“        ”时，会进入if条件并被trim为“”，最终在LIKE的加持下变为“%%”匹配所有记录！故不推荐。
+
+✅工具类省心方式：将`trim`操作包装为泛型类方法更通用
+
+```java
+public class StringTrimmer {
+/**
+ * 仅对指定字段名进行 trim 操作
+ * @param obj 任意对象
+ * @param fieldNames 想要处理的字段名（可变参数）
+ * @param <T> 对象类型
+ * @return 处理后的对象本身
+ */
+public static <T> T trimSelectedFields(T obj, String... fieldNames) {
+    if (obj == null || fieldNames == null || fieldNames.length == 0) {
+        return obj;
+    }
+
+    Set<String> targetFields = new HashSet<>(Arrays.asList(fieldNames));
+    Class<?> clazz = obj.getClass();
+
+    while (clazz != null && clazz != Object.class) {
+        for (Field field : clazz.getDeclaredFields()) {
+            if (targetFields.contains(field.getName()) && field.getType().equals(String.class)) {
+                field.setAccessible(true);
+                try {
+                    String value = (String) field.get(obj);
+                    if (value != null) {
+                        field.set(obj, value.trim());
+                    }
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("无法访问字段: " + field.getName(), e);
+                }
+            }
+        }
+        clazz = clazz.getSuperclass(); // 处理父类字段
+    }
+    return obj;
+}
+```
+
+
