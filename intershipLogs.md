@@ -974,4 +974,46 @@ public static <T> T trimSelectedFields(T obj, String... fieldNames) {
 }
 ```
 
+### 20.传参校验注解--@Pattern
 
+**使用 Spring Validation + 正则注解**
+
+✅ 1. 税号校验（`taxNumber`）
+
+需求：
+
+> 字符型，仅允许数字和字母，**字母自动大写**（后面讲怎么处理），长度 = 18，必填。
+
+可以这样写：
+
+```java
+@NotBlank(message = "税号不能为空", groups = {CreateGroup.class, UpdateGroup.class})
+@Pattern(regexp = "^[A-Z0-9]{18}$", message = "税号必须为18位大写字母或数字", groups = {CreateGroup.class, UpdateGroup.class})
+private String taxNumber;
+```
+
+> 💡这里正则说明：
+>
+> - `A-Z0-9`：允许大写字母和数字；
+> - `{18}`：长度固定 18；
+> - 如果可能出现小写输入，前端或 Controller 层可以转成大写。
+
+------
+
+✅ 2. 银行账户校验（`account`）
+
+需求：
+
+> 字符型，仅允许数字，长度 ≤ 30，非必填。
+
+可以这样写：
+
+```java
+@Pattern(regexp = "^[0-9]{0,30}$", message = "银行账户只能包含数字且不超过30位", groups = {CreateGroup.class, UpdateGroup.class})
+private String account;
+```
+
+> ⚠️ 注意：
+>
+> - 不加 `@NotBlank`，因为非必填；
+> - 这里 `{0,30}` 表示长度可以是 0 到 30。
