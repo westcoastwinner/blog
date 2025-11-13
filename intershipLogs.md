@@ -1017,3 +1017,44 @@ private String account;
 >
 > - 不加 `@NotBlank`，因为非必填；
 > - 这里 `{0,30}` 表示长度可以是 0 到 30。
+
+### 21.mybatis-plus分页插件分页时出现重复数据
+
+问题描述：
+
+```java
+Page<TinyProductResponse> page = new Page<>(req.getPageNum(), req.getPageSize()); 
+
+List<TinyProductResponse> tinyProductResponses =             dataProductPublishMapper.selectProductWithPublish(page, productQueryReq);  
+
+return AjaxResult.success(page); 
+```
+
+我的业务方法里查询产品列表的代码如上，但前端测试时发现，当切换页码时，会出现上一页的数据在下一页出现的情况，这可能是什么原因？
+
+解答：分页一定要有**稳定的排序字段**。
+ 如果 `ORDER BY` 不稳定（比如依赖非唯一字段或根本没有排序），页码切换时结果会随机变化，看起来像“上一页数据出现在下一页”。
+
+在你的 SQL 里，最终排序逻辑是👇：
+
+```
+ORDER BY p.publish_time DESC
+```
+
+也就是说，你的分页是按照 `publish_time` 倒序排序的。
+ 然而——如果数据库中有**多条记录的 `publish_time` 完全相同**（非常常见，比如批量导入或同一时间发布的产品），
+ 数据库在这些时间相同的记录之间**没有固定的输出顺序**，MySQL 会“随机”决定顺序。
+
+于是：第一次查询（pageNum=1）时，数据库选取第 1~10 条，但在那些时间相同的记录中，数据库随意决定顺序。第二次查询（pageNum=2）时，MySQL 再次排序时**顺序发生变化**，于是你看到上一页的数据“又跑到了下一页”。
+
+**解决方案：加上唯一性排序字段**
+
+要让分页排序**稳定**，必须保证 `ORDER BY` 的组合字段能唯一确定一条记录。
+
+推荐改法：在你的 SQL 末尾，把排序改成：
+
+```
+ORDER BY p.publish_time DESC, p.product_id DESC
+```
+
+> 注意：`p.product_id` 应该是主键或唯一字段。
