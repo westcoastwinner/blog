@@ -470,7 +470,7 @@ IPage<TinyProductResponse> result = dataProductPublishMapper.selectProductWithPu
 return AjaxResult.success(result);
 ```
 
-这样 MyBatis-Plus 会自动拼接 `LIMIT` 语句，并帮你查询 `total`。效率高、写法干净。
+**这样 MyBatis-Plus 会自动拼接 `LIMIT` 语句，并帮你查询 `total`。**效率高、写法干净。
 
 ------
 
