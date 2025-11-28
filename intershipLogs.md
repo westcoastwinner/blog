@@ -1058,3 +1058,9 @@ ORDER BY p.publish_time DESC, p.product_id DESC
 ```
 
 > 注意：`p.product_id` 应该是主键或唯一字段。
+
+### 22.关于使用Feign发送和接受HTTP Request
+
+给其他服务提供接口：
+
+可以单独写个Controller，就如同内部服务的Controller一样该加啥注解就加，唯一注意在于方法上需要加一个
