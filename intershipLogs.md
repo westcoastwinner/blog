@@ -1064,3 +1064,30 @@ ORDER BY p.publish_time DESC, p.product_id DESC
 给其他服务提供接口：
 
 可以单独写个Controller，就如同内部服务的Controller一样该加啥注解就加，唯一注意在于方法上需要加一个
+
+feign接口里的方法是用来调用其他服务的
+
+### 23.关于统一异常处理和微服务安全(Spring Security)
+
+本服务的统一异常处理格式如下，主要两个重要注解`@RestControllerAdvice`和`@ExceptionHandler`
+
+```java
+/**
+ * 发票(invoice)包下的自定义验证规则异常处理器（仅用于本服务本包，不对外）
+ */
+@RestControllerAdvice(basePackages = "cn.ah.idata.datafield.platform.service.node.invoice.controller")
+public class InvoiceExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    /**
+     * 自定义验证异常
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Object handleMethodArgumentNotValidException(MethodArgumentNotValidException e)
+    {
+        log.error(e.getMessage(), e);
+        String message = e.getBindingResult().getFieldError().getDefaultMessage();
+        return AjaxResult.error(message);
+    }
+}
+```
+
