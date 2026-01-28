@@ -209,11 +209,11 @@ objects.stream().filter(...)。collect();
 Map<String, String> collect = dataSpaceEntities.stream().collect(Collectors.toMap(DataSpaceEntity::getSpaceId, DataSpaceEntity::getSpaceName));
 ```
 
-#### 🔹reduce()方法
+**🔹reduce()方法**
 
 ------
 
-#####  **`Stream.reduce`**
+**`Stream.reduce`**
 
 - **位置**：在 `Stream` API 里
 - **作用**：把一堆元素“折叠”成一个结果
@@ -240,7 +240,7 @@ System.out.println(sum); // 10
 
 ------
 
-##### reduce 的常见两种写法
+**reduce 的常见两种写法**
 
 **1. 两个参数版本**
 
@@ -302,13 +302,13 @@ System.out.println(max.get()); // 8
 
 ------
 
-#### 🔹distinct()方法
+🔹distinct()方法
 
-#### 🔹count()方法
+🔹count()方法
 
-#### 🔹mapToInt()方法
+🔹mapToInt()方法
 
-#### 🔹sum()方法
+🔹sum()方法
 
 ### 6.时间日期格式
 
@@ -387,13 +387,13 @@ if(deliveryAddress.getDef().equals("0")){
 
 因此通常有两个更优方案
 
-#### 方案一
+**方案一**
 
 当统计的是PV(Page Visit)时，由于允许用户刷新页面增加访问量，故可直接使用Redis的`Sorted Set(ZSET)`结构，该结构天然带排序。
 
 注意，该数据结构是集合，包含setName,setMember,memberScore三个字段。
 
-#### 方案二
+**方案二**
 
 当统计的是UV(User Visit)时，由于不允许用户刷新页面增加访问量，故必须使用Redis的`HyperLogLog`，该结构允许增加一个参数（如用户Id）来据此去重。
 
@@ -596,7 +596,7 @@ BigDecimal new = old.setScale(2,//四舍五入) ;//"1234.5678"->"1234.57"
 
 ------
 
-#### 1. **`Collections`**
+**1. `Collections`**
 
 - **包**：`java.util.Collections`
 - **对象**：**集合类（List、Set、Map）**
@@ -612,7 +612,7 @@ BigDecimal new = old.setScale(2,//四舍五入) ;//"1234.5678"->"1234.57"
 
 ------
 
-#### 2. **`Arrays`**
+**2. `Arrays`**
 
 - **包**：`java.util.Arrays`
 - **对象**：**数组**（`int[]`, `String[]` 等）
@@ -628,7 +628,7 @@ BigDecimal new = old.setScale(2,//四舍五入) ;//"1234.5678"->"1234.57"
 
 ------
 
-#### 3. **`Collectors`**
+**3. `Collectors`**
 
 - **包**：`java.util.stream.Collectors`
 - **对象**：**Stream 流**
@@ -657,7 +657,7 @@ System.out.println(result); // [Alice, Charlie]
 
 ------
 
-#### 🔗 三者的联系
+**🔗 三者的联系**
 
 - `Arrays` 和 `Collections` 都是 **集合/数组的工具类**（面向传统数据结构）。
 - `Collectors` 是 **Stream 的配套工具类**（面向函数式流式处理）。
@@ -678,7 +678,7 @@ System.out.println(result); // [Alice, Charlie]
 
 Spring Boot 使用 `@Scheduled` 注解来实现定时任务非常方便，主要分三步：
 
-#### 1. 启用定时任务功能
+**1. 启用定时任务功能**
 
 在你的 **Spring Boot 主应用类**（通常带有 `@SpringBootApplication` 的类）或任何一个配置类上添加 **`@EnableScheduling`** 注解。**//也可直接在Component类上加**
 
@@ -696,7 +696,7 @@ public class Application {
 }
 ```
 
-#### 2. 创建定时任务类和方法
+**2. 创建定时任务类和方法**
 
 创建一个 Spring 管理的 Bean（例如，使用 **`@Component`** 或 `@Service` 等注解标记的类），并在要执行定时任务的方法上添加 **`@Scheduled`** 注解。
 
@@ -721,7 +721,7 @@ public class ScheduledTasks {
 }
 ```
 
-#### 3. 配置 `@Scheduled` 的执行策略
+**3. 配置 `@Scheduled` 的执行策略**
 
 `@Scheduled` 注解提供了多种配置定时执行时间的方式，最常用的有三种：
 
@@ -1089,5 +1089,75 @@ public class InvoiceExceptionHandler {
         return AjaxResult.error(message);
     }
 }
+```
+
+24.关于点击Maven的`package`按钮
+
+最终打包的jar是否包含依赖的库（libriaries）取决于你是否使用springboot框架：如果是, springboot 会使用一个特殊插件让maven将所有依赖库一起打包，这样传送到服务器后可以直接运行，这称为`"Fat JARs"`。
+
+项目实例：
+
+```
+<build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <!-- 打fat包(默认) -->
+            <id>fat</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+                <finalName>${project.name}</finalName>
+            </build>
+        </profile>
+        <profile>
+            <!-- 打thin包,依赖库放到lib/下 -->
+            <id>thin</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                    <useUniqueVersions>false</useUniqueVersions>
+                                    <classpathPrefix>lib/</classpathPrefix>
+                                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                                    <mainClass>${app.main-class}</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                    </plugin>
+                </plugins>
+                <finalName>${project.name}</finalName>
+            </build>
+        </profile>
+    </profiles>
+
 ```
 
