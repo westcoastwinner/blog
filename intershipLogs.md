@@ -1091,7 +1091,7 @@ public class InvoiceExceptionHandler {
 }
 ```
 
-24.关于点击Maven的`package`按钮
+### 24.关于点击Maven的`package`按钮
 
 最终打包的jar是否包含依赖的库（libriaries）取决于你是否使用springboot框架：如果是, springboot 会使用一个特殊插件让maven将所有依赖库一起打包，这样传送到服务器后可以直接运行，这称为`"Fat JARs"`。
 
@@ -1161,3 +1161,103 @@ public class InvoiceExceptionHandler {
 
 ```
 
+### 25.‘浮表’技巧
+
+在想向A表增加字段但又觉得A表‘太核心’不好增加时，可以考虑‘浮表’这一操作。
+
+具体来说，即以A表的唯一id为B表的唯一id，造一个包含新增字段的空B表。查询时，直接
+`SELECT * FROM A LEFT JOIN B ON A.a_id = B.a_id`即可，新增字段可以通过`COALSCE`来暂时展示默认值，而在改变记录时再执行向B表的插入操作。
+
+### 26.行上下移与排序
+
+当有此需求时，主要依据是否有最终的页面保存按钮来采取方案。
+
+若有，则只需在表中定义`sort_order`(Integer)字段即可，由前端传值，后端只负责依据此排序即可。
+
+若无，则除定义此字段外，需要承接插入、交换、删除优先级等接口。
+
+### 27.`ByteArrayOutputStream`与`FileOutputStream`不同
+
+后者在构造时接收一个代表磁盘文件的`String`字符串或`File`文件类，调用`write`写数据;
+
+前者则无需构造参数（或一个表示size的参数），实例化会在内存创建一个buffer，调用`write`写数据。另外，写完后，想获取数据，需要调用`toByteArray()`/`toString()`获取数据，这会在内存copy一个新buffer。如果调用的是`toByteArray()`，可用一个字节数组对象接收，通过`ByteArrayInputStream`读取这个字节数组。
+
+### 28.JVM系统属性（`System Properties`）与OS环境变量（`Environment Variables`）
+
+OS环境变量是无法被JVM修改的可读取路径集合：
+
+```java
+System.getenv().forEach((k, v) ->
+                System.out.println(k + " = " + v));
+                
+//output：
+USERDOMAIN_ROAMINGPROFILE = DESKTOP-3C6HGM9
+EFC_21076_1592913036 = 1
+LOCALAPPDATA = C:\Users\秦天\AppData\Local
+PROCESSOR_LEVEL = 6
+IntelliJ IDEA = C:\Program Files\JetBrains\IntelliJ IDEA 2025.1.3\bin;
+USERDOMAIN = DESKTOP-3C6HGM9
+LOGONSERVER = \\DESKTOP-3C6HGM9
+JAVA_HOME = C:\Program Files\Java\jdk-17
+SESSIONNAME = Console
+ALLUSERSPROFILE = C:\ProgramData
+PROCESSOR_ARCHITECTURE = AMD64
+EFC_21076_3789132940 = 1
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+SystemDrive = C:
+OneDrive = C:\Users\秦天\OneDrive
+APPDATA = C:\Users\秦天\AppData\Roaming
+USERNAME = 秦天
+ProgramFiles(x86) = C:\Program Files (x86)
+CommonProgramFiles = C:\Program Files\Common Files
+Path = C:\Program Files\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Git\cmd;E:\mysql-8.0.19-winx64\bin;C:\Program Files\Java\jdk-17\bin;C:\Program Files (x86)\NetSarang\Xshell 8\;C:\Users\秦天\AppData\Local\Microsoft\WindowsApps;;C:\Program Files\JetBrains\IntelliJ IDEA 2025.1.3\bin;
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+DriverData = C:\Windows\System32\Drivers\DriverData
+OS = Windows_NT
+COMPUTERNAME = DESKTOP-3C6HGM9
+PROCESSOR_REVISION = 9702
+CommonProgramW6432 = C:\Program Files\Common Files
+ComSpec = C:\WINDOWS\system32\cmd.exe
+EFC_21076_1262719628 = 1
+EFC_21076_2775293581 = 1
+ProgramData = C:\ProgramData
+EFC_21076_2283032206 = 1
+ProgramW6432 = C:\Program Files
+HOMEPATH = \Users\秦天
+SystemRoot = C:\WINDOWS
+TEMP = C:\Users\秦天\AppData\Local\Temp
+HOMEDRIVE = C:
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 151 Stepping 2, GenuineIntel
+USERPROFILE = C:\Users\秦天
+TMP = C:\Users\秦天\AppData\Local\Temp
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+ProgramFiles = C:\Program Files
+PUBLIC = C:\Users\Public
+NUMBER_OF_PROCESSORS = 24
+windir = C:\WINDOWS
+=:: = ::\
+ZES_ENABLE_SYSMAN = 1
+```
+
+JVM系统属性则是JVM启动时加载的一份路径集合，其中有一部分copy自环境变量：
+
+```
+System.getProperties().forEach((k, v) ->
+                System.out.println(k + " = " + v)
+        );
+        
+//output（仅展示部分）
+user.dir = D:\feature-gb-adapt\datafield-platform\datafield-platform-node\datafield-platform-service-node
+user.home = C:\Users\秦天
+java.io.tmpdir = C:\Users\秦天\AppData\Local\Temp\
+java.class.path =...（项目自定义的类文件总路径、Java库的类文件总路径、maven仓库的类文件总路径等）
+java.library.path=...
+java.version = 1.8.0_462
+file.separator = \
+```
+
+注意，java.class.path包含的是类加载的搜索根（classpath entries），通常包括：你自己项目的编译输出目录（target/classes）、 第三方 jar 包（~/.m2/repository/spring-core-6.1.2.jar）等。
+
+
+
+之所以会有JVM系统属性，一部分是因为你的项目会运行在不同的机器、操作系统上，而项目中定义的那些文件都只是一个相对路径，需要一个‘绝对路径前缀’拼接，来唯一确定那些文件的位置；另一部分是因为系统需要一些属性，如用户名、时区、默认编码啥的。
